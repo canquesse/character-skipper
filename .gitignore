@@ -1,0 +1,16 @@
+# OS
+.DS_Store
+._*
+Thumbs.db
+
+# Build output & packaged uploads (regenerate — see README)
+*.zip
+
+# Legacy / scratch assets kept out of the public repo
+fotolar/
+
+# ── Third-party model weights that are NOT redistributed here ──────────────
+# InsightFace publishes its pretrained models for non-commercial research use
+# only, so the weights are not mirrored in this repository.
+# Fetch them yourself with:  ./scripts/download-models.sh
+models/w600k_mbf.onnx

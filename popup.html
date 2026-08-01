@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Character Skipper</title>
+  <link rel="stylesheet" href="popup.css" />
+</head>
+<body>
+<div class="app">
+
+  <!-- ── ENGINE LOADING BAR ──────────────────────────────────────────────── -->
+  <div id="engineLoadBar" class="engine-load-bar" style="display:none;">
+    <div class="engine-load-progress-wrap">
+      <div class="engine-load-progress-fill" id="engineLoadFill"></div>
+    </div>
+    <span class="engine-load-label" id="engineLoadLabel" data-i18n="engineLoading">Loading face recognition engine…</span>
+  </div>
+
+  <!-- ── HEADER ─────────────────────────────────────────────────────────── -->
+  <header class="header">
+    <div class="brand">
+      <div class="brand-icon" aria-hidden="true">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none">
+          <path d="M5 12h13" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>
+          <path d="M13 7l5 5-5 5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </div>
+      <div class="brand-copy">
+        <h1 class="brand-title">Character Skipper</h1>
+        <p class="brand-sub" data-i18n="brandSub">by Canquesse AI</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <button id="langToggleBtn" class="lang-btn" type="button">TR</button>
+      <label class="power" aria-label="Enable extension">
+        <input type="checkbox" id="extensionToggle" />
+        <span class="power-track"><span class="power-knob"></span></span>
+      </label>
+    </div>
+  </header>
+
+  <!-- ── LIBRARY ────────────────────────────────────────────────────────── -->
+  <section class="panel">
+    <button id="libraryCollapseButton" class="panel-toggle" type="button" aria-expanded="true">
+      <span class="panel-title" data-i18n="library">Library</span>
+      <div class="panel-toggle-right">
+        <span id="libraryCount" class="count-chip" aria-label="library count">0</span>
+        <span id="libraryCollapseIcon" class="chevron" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+    </button>
+    <div id="libraryBody" class="panel-body">
+      <p class="hint" data-i18n="libraryHint">
+        Activate saved characters here — no need to re-scan every video.
+      </p>
+      <div id="libraryGrid" class="lib-grid" role="list" aria-label="Saved characters"></div>
+    </div>
+  </section>
+
+  <!-- ── ADD CHARACTER ──────────────────────────────────────────────────── -->
+  <section class="panel">
+    <button id="addCharToggle" class="panel-toggle" type="button" aria-expanded="true">
+      <span class="panel-title" data-i18n="addCharacter">Add Character</span>
+      <div class="panel-toggle-right">
+        <span class="chevron" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+    </button>
+    <div id="addCharBody" class="panel-body">
+
+      <!-- Auto scan (primary) -->
+      <div class="auto-scan-panel" id="autoScanPanel">
+
+        <div id="autoScanIdle">
+          <p class="hint" data-i18n="autoScanHint">
+            The extension scans the entire video and detects all characters.
+          </p>
+          <button id="autoScanButton" class="btn btn-primary btn-block" type="button">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="11" cy="11" r="7" stroke="currentColor" stroke-width="2"/>
+              <path d="M21 21l-4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            <span data-i18n="scanAll">Scan Entire Video</span>
+          </button>
+        </div>
+
+        <div id="autoScanProgress" style="display:none;">
+          <div class="scan-progress-row">
+            <span class="btn-spinner" aria-hidden="true"></span>
+            <span id="autoScanProgressText">Scanning…</span>
+          </div>
+          <div class="scan-progress-bar-wrap">
+            <div class="scan-progress-bar" id="autoScanProgressBar" style="width:0%"></div>
+          </div>
+          <p class="hint hint--sm" data-i18n="scanProgressHint">Scan in progress — video will return to original position when done.</p>
+        </div>
+
+        <div id="autoScanResults" style="display:none;">
+          <div class="auto-scan-header">
+            <span id="autoScanResultCount" class="scan-count-badge">0</span>
+            <span class="auto-scan-header-text" data-i18n="detectedSuffix"> detected — click one to skip</span>
+            <button id="autoScanRetry" class="scan-clear-btn" type="button" title="Rescan" aria-label="Rescan">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M3 12a9 9 0 1 0 3-6.7L3 8" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M3 4v4h4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          </div>
+          <div id="autoScanGrid" class="scan-faces" role="list" aria-label="Detected characters"></div>
+          <div id="autoScanSaveRow" class="save-row" style="display:none;">
+            <select id="autoScanTargetSelect" class="text-field" aria-label="Save target"></select>
+            <input
+              id="autoScanNameInput"
+              type="text"
+              class="text-field"
+              placeholder="Selected character's name…"
+              data-i18n-placeholder="selectedCharName"
+              maxlength="50"
+              autocomplete="off"
+            />
+            <div id="autoScanMergeHint" class="merge-hint" style="display:none"></div>
+            <button id="autoScanSaveButton" class="btn btn-primary btn-block" type="button" data-i18n="save">Save</button>
+            <div id="autoScanSaveStatus" class="status-msg" aria-live="polite"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="or-divider">
+        <span class="or-line"></span>
+        <span class="or-text" data-i18n="orSingleFrame">or scan single frame</span>
+        <span class="or-line"></span>
+      </div>
+
+      <!-- Single-frame scan (secondary) -->
+      <div class="scan-panel" id="scanPanel">
+        <div class="scan-faces" id="scanFaces" style="display:none"
+             role="list" aria-label="Detected faces"></div>
+
+        <div class="scan-empty" id="scanEmpty">
+          <div class="scan-empty-icon" id="scanEmptyIcon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="9" r="3.2" stroke="currentColor" stroke-width="1.8"/><path d="M5 20c0-3.3 3.1-6 7-6s7 2.7 7 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          </div>
+          <div class="scan-empty-text" id="scanEmptyText" data-i18n="scanCurrentFrameHint">
+            Scan the current frame and select a face.
+          </div>
+        </div>
+
+        <div class="scan-controls">
+          <button id="scanVideoButton" class="btn btn-soft" type="button">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="12" r="4" stroke="currentColor" stroke-width="2"/>
+              <path d="M2 12C2 6.48 6.48 2 12 2s10 4.48 10 10-4.48 10-10 10S2 17.52 2 12z"
+                stroke="currentColor" stroke-width="1.5" stroke-dasharray="3 2"/>
+            </svg>
+            <span id="scanBtnLabel" data-i18n="scanCurrentFrame">Scan Current Frame</span>
+          </button>
+          <div class="scan-count-row" id="scanCountRow" style="display:none">
+            <span class="scan-count-badge" id="scanCountBadge">0</span>
+            <span class="scan-count-label" data-i18n="selected">selected</span>
+            <button id="clearScanButton" class="scan-clear-btn"
+                    type="button" data-i18n="clearSelection" data-i18n-attr="aria-label" aria-label="Clear selection">✕</button>
+          </div>
+        </div>
+
+        <input
+          id="characterNameInput"
+          type="text"
+          class="text-field"
+          placeholder="Character name…"
+          data-i18n-placeholder="characterName"
+          maxlength="50"
+          autocomplete="off"
+        />
+      </div>
+
+      <div class="or-divider">
+        <span class="or-line"></span>
+        <span class="or-text" data-i18n="orUploadPhoto">or upload photo</span>
+        <span class="or-line"></span>
+      </div>
+
+      <!-- Upload photos (tertiary) -->
+      <label class="drop-zone" for="characterImagesInput">
+        <input
+          id="characterImagesInput"
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          class="drop-input"
+        />
+        <div class="drop-icon" aria-hidden="true">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7 9m5-5l5 5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 17v2a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        </div>
+        <div class="drop-body">
+          <div class="drop-text" data-i18n="dragOrSelect">Drag or select photo</div>
+          <div class="drop-hint" data-i18n="maxFileSize">JPEG · PNG · WebP · max 5 MB</div>
+        </div>
+      </label>
+
+      <button id="addCharacterButton" class="btn btn-primary btn-block" type="button" data-i18n="saveCharacter">
+        Save Character
+      </button>
+
+      <div id="addCharacterStatus" class="status-msg" aria-live="polite"></div>
+    </div>
+  </section>
+
+  <!-- ── CHARACTERS (fine control) ──────────────────────────────────────── -->
+  <section class="panel">
+    <button id="charactersCollapseButton" class="panel-toggle" type="button" aria-expanded="true">
+      <span class="panel-title" data-i18n="characters">Characters</span>
+      <div class="panel-toggle-right">
+        <span id="characterCount" class="count-chip" aria-label="character count">0</span>
+        <span id="charactersCollapseIcon" class="chevron" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+    </button>
+    <div id="charactersSectionBody" class="panel-body">
+      <label class="toggle-row" for="autoLearnToggle">
+        <span class="toggle-copy">
+          <span class="toggle-label" data-i18n="autoLearn">Auto learn</span>
+          <span class="toggle-desc" data-i18n="autoLearnDesc">Refine characters automatically while watching</span>
+        </span>
+        <span class="toggle">
+          <input type="checkbox" id="autoLearnToggle" />
+          <span class="toggle-track"></span>
+        </span>
+      </label>
+
+      <div class="sub-section">
+        <div class="slider-head">
+          <span class="slider-label" data-i18n="maxDescriptors">Max descriptors / character</span>
+          <span id="maxDescriptorsValue" class="value-chip" aria-live="polite">30</span>
+        </div>
+        <input
+          id="maxDescriptorsInput"
+          type="range"
+          class="slider"
+          min="4"
+          max="40"
+          step="1"
+          value="30"
+          aria-label="Max descriptors per character"
+        />
+      </div>
+
+      <div id="characterList" class="char-list" role="list">
+        <div class="empty-msg" data-i18n="noCharacters">No characters added yet.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ── DETECTION THRESHOLD ────────────────────────────────────────────── -->
+  <section class="panel">
+    <button id="thresholdToggle" class="panel-toggle" type="button" aria-expanded="false">
+      <span class="panel-title" data-i18n="detectionThreshold">Detection Threshold</span>
+      <div class="panel-toggle-right">
+        <span id="thresholdValue" class="value-chip" aria-live="polite">0.52</span>
+        <span class="chevron" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+    </button>
+    <div id="thresholdBody" class="panel-body" style="display:none;">
+      <input
+        id="thresholdInput"
+        type="range"
+        class="slider"
+        min="0.20"
+        max="0.80"
+        step="0.01"
+        value="0.52"
+        aria-label="Detection threshold"
+      />
+      <p class="hint" data-i18n="thresholdHint">Lower = more aggressive match · Higher = stricter match</p>
+    </div>
+  </section>
+
+  <!-- ── STATISTICS ─────────────────────────────────────────────────────── -->
+  <section class="panel">
+    <button id="statsToggle" class="panel-toggle" type="button" aria-expanded="false">
+      <span class="panel-title" data-i18n="stats">Statistics</span>
+      <div class="panel-toggle-right">
+        <span class="live-badge">Live</span>
+        <span class="chevron" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+    </button>
+    <div id="statsBody" class="panel-body" style="display:none;">
+      <div class="stat-grid">
+        <div class="stat-cell">
+          <div class="stat-num" id="statsTotalDetections">0</div>
+          <div class="stat-lbl" data-i18n="detections">Detections</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num" id="statsTotalSkips">0</div>
+          <div class="stat-lbl" data-i18n="skips">Skips</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num" id="statsTotalSkippedSeconds">0s</div>
+          <div class="stat-lbl" data-i18n="timeSaved">Time saved</div>
+        </div>
+        <div class="stat-cell">
+          <div class="stat-num" id="statsLastScore">—</div>
+          <div class="stat-lbl" data-i18n="score">Score</div>
+        </div>
+      </div>
+
+      <div class="detail-row">
+        <span class="detail-key" data-i18n="lastDetected">Last detected</span>
+        <span id="statsLastDetected" class="detail-val">—</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-key" data-i18n="detectionTime">Detection time</span>
+        <span id="statsLastDetectionAt" class="detail-val">—</span>
+      </div>
+
+      <button id="resetStatsButton" class="btn btn-danger-ghost btn-block" type="button" data-i18n="reset">
+        Reset
+      </button>
+    </div>
+  </section>
+
+  <!-- ── DEBUG ──────────────────────────────────────────────────────────── -->
+  <section class="panel">
+    <button id="debugToggle" class="panel-toggle" type="button" aria-expanded="false">
+      <span class="panel-title">Debug</span>
+      <div class="panel-toggle-right">
+        <span class="chevron" aria-hidden="true">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M6 9l6 6 6-6" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        </span>
+      </div>
+    </button>
+    <div id="debugBody" class="panel-body" style="display:none;">
+      <label class="toggle-row" for="debugOverlayToggle">
+        <span class="toggle-copy"><span class="toggle-label">Debug overlay</span></span>
+        <span class="toggle">
+          <input type="checkbox" id="debugOverlayToggle" />
+          <span class="toggle-track"></span>
+        </span>
+      </label>
+
+      <label class="toggle-row" for="debugBoxesToggle">
+        <span class="toggle-copy"><span class="toggle-label">Debug boxes</span></span>
+        <span class="toggle">
+          <input type="checkbox" id="debugBoxesToggle" />
+          <span class="toggle-track"></span>
+        </span>
+      </label>
+
+      <button id="refreshDebugButton" class="btn btn-soft btn-block" type="button" data-i18n="debugRefresh">
+        Refresh Debug
+      </button>
+
+      <div class="debug-panel" role="status" aria-label="Runtime debug info">
+        <div class="debug-row"><span>Mode</span><span id="runtimeMode">—</span></div>
+        <div class="debug-row"><span>Detected</span><span id="runtimeDetected">—</span></div>
+        <div class="debug-row"><span>Score</span><span id="runtimeScore">—</span></div>
+        <div class="debug-row"><span>Faces</span><span id="runtimeFaces">0</span></div>
+        <div class="debug-row"><span>Detect ms</span><span id="runtimeDetectMs">0</span></div>
+        <div class="debug-row"><span>Video time</span><span id="runtimeVideoTime">0.00s</span></div>
+      </div>
+    </div>
+  </section>
+
+  <footer class="colophon">
+    <span class="colophon-text">Canquesse AI Solutions</span>
+  </footer>
+
+  <!-- ── SCAN GALLERY OVERLAY ──────────────────────────────────────────── -->
+  <div id="scanGalleryOverlay" class="scan-gallery-overlay" style="display:none;"
+       role="dialog" aria-modal="true" data-i18n="characterPhotos" data-i18n-attr="aria-label" aria-label="Character photos">
+    <div class="scan-gallery-header">
+      <span id="scanGalleryTitle" class="scan-gallery-title"></span>
+      <button id="scanGalleryClose" class="scan-gallery-close" type="button" data-i18n="close" data-i18n-attr="aria-label" aria-label="Close">✕</button>
+    </div>
+    <div id="scanGalleryGrid" class="scan-gallery-grid" role="list"></div>
+    <div class="scan-gallery-footer">
+      <button id="scanGalleryToggleSelect" class="btn btn-primary btn-block" type="button" data-i18n="select">Select</button>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-container" class="toast-container" aria-live="polite" aria-atomic="false"></div>
+
+<script src="storage.js"></script>
+<script src="popup.js"></script>
+</body>
+</html>
