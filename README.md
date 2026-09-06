@@ -6,9 +6,17 @@
 
 A Chrome extension by [Canquesse AI Solutions](https://github.com/canquesse).
 
+[![Checks](https://github.com/canquesse/character-skipper/actions/workflows/ci.yml/badge.svg)](https://github.com/canquesse/character-skipper/actions/workflows/ci.yml)
+![Chrome Manifest V3](https://img.shields.io/badge/Chrome-Manifest_V3-4285F4)
+![Local processing](https://img.shields.io/badge/processing-on_device-087F8C)
+
+[Overview](https://canquesse.github.io/character-skipper/) · [Privacy](docs/privacy.html) · [Third-party licenses](THIRD-PARTY.md)
+
 </div>
 
 ---
+
+![Character Skipper interface](chrome-web-store/final/screenshot-01-detect-and-select.png)
 
 ## What it does
 
@@ -82,6 +90,33 @@ zip -r -X character-skipper-store.zip . \
   -x 'chrome-web-store/*' -x '*.zip' -x '.DS_Store' -x '*/.DS_Store' \
   -x '.gitignore' -x 'README.md' -x 'THIRD-PARTY.md' -x 'LICENSE'
 ```
+
+## Project map
+
+| Area | Responsibility |
+| --- | --- |
+| `content.js` | YouTube playback integration and scan/skip controls |
+| `detection-worker.js` | Frame analysis and face embeddings |
+| `faceManager.js`, `storage.js` | Character profiles and local persistence |
+| `popup.*` | Extension controls |
+| `sandbox.*` | Extension-origin worker host |
+| `docs/` | Public overview and privacy policy |
+
+## Development checks
+
+```sh
+for file in *.js; do node --check "$file"; done
+```
+
+CI checks syntax and manifest file references. Recognition quality and playback behavior still need manual verification in Chrome: load the unpacked extension, scan a video, select a character, confirm skipping, and check that saved profiles survive a browser restart.
+
+## Limitations
+
+Recognition can be affected by lighting, camera angle, occlusion, small faces and similar-looking people. Scanning performance depends on the device and video. Review detected characters before enabling automatic skipping. Model licensing is separate from source licensing; the optional recognition weights have upstream restrictions.
+
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). Reproducible reports should include Chrome version, extension version and the scan/playback steps.
 
 ## Licenses
 

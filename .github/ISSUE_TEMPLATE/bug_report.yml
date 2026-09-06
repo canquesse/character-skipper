@@ -1,0 +1,25 @@
+name: Bug report
+description: Report a reproducible problem.
+title: "bug: "
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What happened?
+      description: Describe what you expected and what actually happened.
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      description: Include the command, input or sequence of clicks. Remove credentials and private data.
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, runtime/browser version and project version.
+    validations:
+      required: true

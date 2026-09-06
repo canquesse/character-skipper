@@ -1,0 +1,27 @@
+name: Checks
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Check first-party JavaScript syntax
+        run: |
+          for file in *.js; do node --check "$file"; done
+      - name: Validate extension manifest references
+        run: |
+          python3 - <<'PYTHON'
+          import json
+          from pathlib import Path
+          manifest = json.loads(Path('manifest.json').read_text())
+          paths = list(manifest['icons'].values()) + [manifest['action']['default_popup']]
+          paths += [p for group in manifest['content_scripts'] for p in group['js']]
+          assert manifest['manifest_version'] == 3
+          for path in paths:
+              assert Path(path).is_file(), path
+          PYTHON
